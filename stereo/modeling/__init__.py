@@ -30,7 +30,7 @@ __all__ = {
     'CasGwcNet': CasStereoTrainer,
     'CasPSMNet': CasStereoTrainer,
     'LightStereo': LightStereoTrainer,
-    'StereoBaseGRU': StereoBaseGRUTrainer
+    'StereoBaseGRU': StereoBaseGRUTrainer,
     'IInet': IINetTrainer
 }
 

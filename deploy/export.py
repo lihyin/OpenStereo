@@ -38,7 +38,7 @@ os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'max_split_size_mb:128'
 
 # Network
 sys.path.append(str(ROOT.parent))  # add ROOT to PATH
-from stereo.modeling import models, build_trainer
+# from stereo.modeling import models, build_trainer
 from stereo.utils.common_utils import config_loader, create_logger, load_params_from_file
 
 from stereo.modeling.models.sttr.sttr import STTR
