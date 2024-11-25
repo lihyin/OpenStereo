@@ -1,3 +1,7 @@
 *.pyc
 *.pth
 .vscode
+*.ckpt
+*.onnx
+*.pt
+*.log
