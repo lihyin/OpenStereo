@@ -5,3 +5,4 @@
 *.onnx
 *.pt
 *.log
+output
