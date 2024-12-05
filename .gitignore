@@ -6,3 +6,6 @@
 *.pt
 *.log
 output
+.idea
+**__pycache__**
+**.DS_Store**

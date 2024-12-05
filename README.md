@@ -1,5 +1,13 @@
+<div align="center">
 <!-- PROJECT LOGO -->
 <h1 align="center">OpenStereo: A Comprehensive Benchmark for Stereo Matching and Strong Baseline</h1>
+<a href="https://arxiv.org/abs/2312.00343"><img src='https://img.shields.io/badge/arXiv-OpenStereo-red' alt='Paper PDF'></a> 
+</div>
+
+
+
+
+
 
 OpenStereo is a flexible and extensible project for stereo matching.
 
@@ -15,10 +23,12 @@ OpenStereo is a flexible and extensible project for stereo matching.
 - **[March 2023]**:OpenStereo is available!!!
 
 ## Our Publications
-- **[Arxiv'24]** Stereo Anything: Unifying Stereo Matching with Large-Scale Mixed Data, [*Paper*](https://arxiv.org/abs/2411.14053)
+- **[Arxiv'24]** Stereo Anything: Unifying Stereo Matching with Large-Scale Mixed Data, [*Paper*](https://arxiv.org/abs/2411.14053) and [*ProjectPage*](docs/StereoAnything.md)
 - **[Arxiv'24]** LightStereo: Channel Boost Is All Your Need for Efficient 2D Cost Aggregation, [*Paper*](https://arxiv.org/abs/2406.19833) and [*Code*](stereo/modeling/models/lightstereo).
 - **[Arxiv'23]** OpenStereo: A Comprehensive Benchmark for Stereo Matching and Strong Baseline,  [*Paper*](https://arxiv.org/abs/2312.00343) and [*Code*](cfgs/).
 
+## Overall
+![vis](misc/OpenStereo.png)
   
 ## Highlighted features
 - **Multiple Dataset supported**: OpenStereo supports 15 popular stereo datasets: [SceneFlow](data/SceneFlow/README.md), [KITTI12](data/KITTI12/README.md) & [KITTI15](data/KITTI15/README.md), 
@@ -59,11 +69,11 @@ Results and models are available in the [model zoo](docs/1.model_zoo.md).
         journal={arXiv preprint arXiv:2406.19833},
         year={2024}
 }
-@article{guo2024stereoanything,
-        title={Stereo Anything: Unifying Stereo Matching with Large-Scale Mixed Data},
-        author={Guo, Xianda and Zhang, Chenming and Zhang, Youmin and Nie, Dujun and Wang, Ruilin and Zheng, Wenzhao and Poggi, Matteo and Chen, Long},
-        journal={arXiv preprint arXiv:2411.14053},
-        year={2024}
+@article{guo2024stereo,
+  title={Stereo Anything: Unifying Stereo Matching with Large-Scale Mixed Data},
+  author={Guo, Xianda and Zhang, Chenming and Zhang, Youmin and Nie, Dujun and Wang, Ruilin and Zheng, Wenzhao and Poggi, Matteo and Chen, Long},
+  journal={arXiv preprint arXiv:2411.14053},
+  year={2024}
 }
 ```
 **Note**: This code is only used for academic purposes, people cannot use this code for anything that might be considered commercial use.
