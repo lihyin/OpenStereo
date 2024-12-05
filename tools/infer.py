@@ -10,6 +10,7 @@ from PIL import Image
 sys.path.insert(0, './')
 from stereo.utils import common_utils
 from stereo.modeling import build_trainer
+from stereo.utils.disp_color import disp_to_color
 from stereo.datasets.dataset_template import build_transform_by_cfg
 
 def parse_config():
@@ -75,8 +76,11 @@ def main():
     with torch.cuda.amp.autocast(enabled=cfgs.OPTIMIZATION.AMP):
         model_pred = model(sample)
 
-    disp_pred = model_pred['disp_pred'].squeeze(1)
-    return disp_pred
+    disp_pred = model_pred['disp_pred'].squeeze().cpu().numpy()
+    img_color = disp_to_color(disp_pred, max_disp=192)
+    img_color = img_color.astype('uint8')
+    img_color = Image.fromarray(img_color)
+    img_color.save(args.savename)
 
 
 if __name__ == '__main__':
