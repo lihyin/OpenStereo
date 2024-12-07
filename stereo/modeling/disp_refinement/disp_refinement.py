@@ -199,6 +199,16 @@ def context_upsample(disp_low, up_weights, scale_factor=4):
     disp_unfold = F.unfold(disp_low, kernel_size=3, dilation=1, padding=1)  # [bz, 3x3, hxw]
     disp_unfold = disp_unfold.reshape(b, -1, h, w)  # [bz, 3x3, h, w]
     disp_unfold = F.interpolate(disp_unfold, (h * scale_factor, w * scale_factor), mode='nearest')  # [bz, 3x3, 4h, 4w]
-    disp = (disp_unfold * up_weights).sum(1)  # # [bz, 4h, 4w]
+    # disp = (disp_unfold * up_weights).sum(1)  # # [bz, 4h, 4w]
+
+    # Implment sum(1) with 1x1 conv2d
+    disp_unfold = disp_unfold * up_weights
+
+    conv1x1 = nn.Conv2d(in_channels=disp_unfold.size(1), out_channels=1, 
+                        kernel_size=1, bias=False, device=disp_unfold.device)
+    with torch.no_grad():
+        conv1x1.weight[:] = 1
+
+    disp = conv1x1(disp_unfold)
 
     return disp
