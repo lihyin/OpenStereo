@@ -26,7 +26,7 @@ class LightStereo(nn.Module):
                                     backbone_channels=self.backbone.output_channels)
 
         # disp refine
-        # Modify for SiMa: replace InstanceNorm2d with BatchNorm2d
+        # Modify for SiMa2: replace InstanceNorm2d with BatchNorm2d
         self.refine_1 = nn.Sequential(
             BasicConv2d(self.backbone.output_channels[0], 24, kernel_size=3, stride=1, padding=1,
                         norm_layer=nn.InstanceNorm2d, act_layer=nn.LeakyReLU),
@@ -62,12 +62,10 @@ class LightStereo(nn.Module):
         spx_pred = F.softmax(xspx, 1)  # [bz, 9, H, W]
         
         # Modify for SiMa: remove context_upsample() layers and move outside of the model
-        disp_pred = context_upsample(init_disp * 4., spx_pred.float()) # # [bz, 1, H, W]
-
-        result = {'disp_pred': disp_pred}
-
-        # result = {'init_disp': init_disp, 
-        #           'spx_pred': spx_pred}
+        # disp_pred = context_upsample(init_disp * 4., spx_pred.float()) # # [bz, 1, H, W]
+        # result = {'disp_pred': disp_pred}
+        result = {'init_disp': init_disp, 
+                  'spx_pred': spx_pred}
         
         if self.training:
             disp_4 = F.interpolate(init_disp, image1.shape[2:], mode='bilinear', align_corners=False)
@@ -82,7 +80,8 @@ class LightStereo(nn.Module):
         mask = (disp_gt < self.max_disp) & (disp_gt > 0)  # [bz, 1, h, w]
 
         # Modify for SiMa: remove the unsupported last layers and calculate outside of the model
-        # model_pred['disp_pred'] = context_upsample(model_pred['init_disp'] * 4., model_pred['spx_pred'].float())  # # [bz, 1, H, W]
+        if 'disp_pred' not in model_pred:
+            model_pred['disp_pred'] = context_upsample(model_pred['init_disp'] * 4., model_pred['spx_pred'].float())  # # [bz, 1, H, W]
 
         disp_pred = model_pred['disp_pred']
         loss = 1.0 * F.smooth_l1_loss(disp_pred[mask], disp_gt[mask], reduction='mean')

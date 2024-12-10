@@ -197,7 +197,6 @@ def context_upsample(disp_low, up_weights, scale_factor=4):
 
     b, c, h, w = disp_low.shape
 
-    # Modify for SiMa
     disp_unfold = F.unfold(disp_low, kernel_size=3, dilation=1, padding=1)  # [bz, 3x3, hxw]
     disp_unfold = disp_unfold.reshape(b, -1, h, w)  # [bz, 3x3, h, w]
     disp_unfold = F.interpolate(disp_unfold, (h * scale_factor, w * scale_factor), mode='nearest')  # [bz, 3x3, 4h, 4w]

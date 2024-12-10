@@ -273,7 +273,8 @@ class TrainerTemplate:
                 infer_time = time.time() - infer_start
 
             # Modify for SiMa: remove the unsupported last layers and calculate outside of the model
-            # model_pred['disp_pred'] = context_upsample(model_pred['init_disp'] * 4., model_pred['spx_pred'].float())  # # [bz, 1, H, W]
+            if 'disp_pred' not in model_pred:
+                model_pred['disp_pred'] = context_upsample(model_pred['init_disp'] * 4., model_pred['spx_pred'].float())  # # [bz, 1, H, W]
 
             disp_pred = model_pred['disp_pred']
             disp_gt = data["disp"]

@@ -51,7 +51,7 @@ class Backbone(nn.Module):
         self.fpn_layer3 = FPNLayer(channels[1], channels[2])
         self.fpn_layer2 = FPNLayer(channels[2], channels[3])
 
-        # Modify for SiMa: replace InstanceNorm2d with BatchNorm2d, 
+        # Modify for SiMa2: replace InstanceNorm2d with BatchNorm2d, 
         #                  use padding_mode='zeros' instead of 'replicate'
         self.out_conv = BasicConv2d(channels[3], channels[3],
                                     kernel_size=3, padding=1, padding_mode="replicate",
