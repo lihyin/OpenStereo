@@ -10,6 +10,6 @@ def disparity_regression(x, maxdisp):
     disp_values = torch.arange(0, maxdisp, dtype=x.dtype, device=x.device)
     disp_values = disp_values.view(1, maxdisp, 1, 1)
     
-    # Modify for SiMa: replace sum by mean() / size()
+    # Modify for SiMa: replace sum by mean() * size()
+    return torch.mean(x * disp_values, 1, keepdim=True) * x.size(1)
     # return torch.sum(x * disp_values, 1, keepdim=True)
-    return torch.mean(x * disp_values, 1, keepdim=True) / disp_values.size(1)

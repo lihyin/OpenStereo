@@ -41,6 +41,15 @@ def correlation_volume(left_feature, right_feature, max_disp):
         else:
             cost_volume_row = (left_feature * right_feature).mean(dim=1, keepdim=True)
             cost_volume = cost_volume_row
+    
+    '''
+    cost_volume = left_feature.new_zeros(b, max_disp, h, w)
+    for i in range(max_disp):
+        if i > 0:
+            cost_volume[:, i, :, i:] = (left_feature[:, :, :, i:] * right_feature[:, :, :, :-i]).mean(dim=1)
+        else:
+            cost_volume[:, i, :, :] = (left_feature * right_feature).mean(dim=1)
+    '''
             
     cost_volume = cost_volume.contiguous()
     return cost_volume
