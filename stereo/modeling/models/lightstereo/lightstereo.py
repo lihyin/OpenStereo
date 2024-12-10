@@ -29,9 +29,9 @@ class LightStereo(nn.Module):
         # Modify for SiMa2: replace InstanceNorm2d with BatchNorm2d
         self.refine_1 = nn.Sequential(
             BasicConv2d(self.backbone.output_channels[0], 24, kernel_size=3, stride=1, padding=1,
-                        norm_layer=nn.InstanceNorm2d, act_layer=nn.LeakyReLU),
+                        norm_layer=nn.BatchNorm2d, act_layer=nn.LeakyReLU),
             BasicConv2d(24, 24, kernel_size=3, stride=1, padding=1,
-                        norm_layer=nn.InstanceNorm2d, act_layer=nn.ReLU))
+                        norm_layer=nn.BatchNorm2d, act_layer=nn.ReLU))
 
         self.stem_2 = nn.Sequential(
             BasicConv2d(3, 16, kernel_size=3, stride=2, padding=1,

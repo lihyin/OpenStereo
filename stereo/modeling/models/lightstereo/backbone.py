@@ -55,7 +55,7 @@ class Backbone(nn.Module):
         #                  use padding_mode='zeros' instead of 'replicate'
         self.out_conv = BasicConv2d(channels[3], channels[3],
                                     kernel_size=3, padding=1, padding_mode="zeros",
-                                    norm_layer=nn.InstanceNorm2d)  
+                                    norm_layer=nn.BatchNorm2d)  
 
         self.output_channels = channels[::-1]
 
