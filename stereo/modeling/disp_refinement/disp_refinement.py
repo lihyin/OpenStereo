@@ -200,10 +200,8 @@ def context_upsample(disp_low, up_weights, scale_factor=4):
     disp_unfold = disp_unfold.reshape(b, -1, h, w)  # [bz, 3x3, h, w]
     disp_unfold = F.interpolate(disp_unfold, (h * scale_factor, w * scale_factor), mode='nearest')  # [bz, 3x3, 4h, 4w]
     # disp = (disp_unfold * up_weights).sum(1)  # # [bz, 4h, 4w]
-    disp_unfold = disp_unfold * up_weights
-    disp = torch.zeros(disp_unfold.size(0), 1, disp_unfold.size(2), disp_unfold.size(3), 
-                       device=disp_unfold.device)
-    for i in range(disp_unfold.size(1)):  # Iterate over the second dimension
-        disp += disp_unfold[:, i, :, :]  # Accumulate along the 2nd dimension
-
+    
+    # Implement sum with mean()
+    disp = (disp_unfold * up_weights).mean(1, keepdim=True) * disp_unfold.size(1) # # [bz, 1, 4h, 4w]
+ 
     return disp

@@ -9,6 +9,7 @@ import torch.distributed as dist
 
 from functools import partial
 from stereo.datasets import build_dataloader
+from stereo.modeling.disp_refinement.disp_refinement import context_upsample
 from stereo.utils import common_utils
 from stereo.utils.common_utils import color_map_tensorboard, write_tensorboard
 from stereo.utils.warmup import LinearWarmup
@@ -270,6 +271,8 @@ class TrainerTemplate:
                 infer_start = time.time()
                 model_pred = self.model(data)
                 infer_time = time.time() - infer_start
+
+            model_pred['disp_pred'] = context_upsample(model_pred['init_disp'] * 4., model_pred['spx_pred'].float())  # # [bz, 1, H, W]
 
             disp_pred = model_pred['disp_pred']
             disp_gt = data["disp"]

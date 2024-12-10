@@ -52,8 +52,8 @@ class Backbone(nn.Module):
         self.fpn_layer2 = FPNLayer(channels[2], channels[3])
 
         self.out_conv = BasicConv2d(channels[3], channels[3],
-                                    kernel_size=3, padding=1, padding_mode="replicate",
-                                    norm_layer=nn.InstanceNorm2d)
+                                    kernel_size=3, padding=1, padding_mode="zeros",
+                                    norm_layer=nn.BatchNorm2d)
 
         self.output_channels = channels[::-1]
 
