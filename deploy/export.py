@@ -132,13 +132,6 @@ def export_onnx(model, inputs, weights, opset, dynamic, simplify, prefix=colorst
     # ONNX export
     check_requirements('onnx', logger)
     import onnx
-    '''
-    from torch.onnx import register_custom_op_symbolic
-    def uniform_symbolic(g, *args):
-        # Replace with supported ONNX logic, such as ONNX's RandomUniform
-        return g.op("RandomUniform", args[0], args[1])
-    register_custom_op_symbolic("aten::uniform", uniform_symbolic, opset_version=onnx.__version__)
-    '''
     
     logger.info(f'{prefix} starting export with onnx {onnx.__version__}...')
     f = Path(weights).with_suffix('.onnx')

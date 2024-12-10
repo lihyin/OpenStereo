@@ -272,7 +272,8 @@ class TrainerTemplate:
                 model_pred = self.model(data)
                 infer_time = time.time() - infer_start
 
-            model_pred['disp_pred'] = context_upsample(model_pred['init_disp'] * 4., model_pred['spx_pred'].float())  # # [bz, 1, H, W]
+            # Modify for SiMa: remove the unsupported last layers and calculate outside of the model
+            # model_pred['disp_pred'] = context_upsample(model_pred['init_disp'] * 4., model_pred['spx_pred'].float())  # # [bz, 1, H, W]
 
             disp_pred = model_pred['disp_pred']
             disp_gt = data["disp"]

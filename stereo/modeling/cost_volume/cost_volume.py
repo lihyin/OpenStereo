@@ -31,6 +31,7 @@ class CoExCostVolume(nn.Module):
 
 def correlation_volume(left_feature, right_feature, max_disp):
     b, c, h, w = left_feature.size()
+    # Modify for SiMa: use pad & concat to replace scatter_nd, add keepdim for mean()
     cost_volume = []
     for i in range(max_disp):
         if i > 0:
