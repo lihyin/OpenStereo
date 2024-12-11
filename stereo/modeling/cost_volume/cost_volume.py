@@ -36,7 +36,13 @@ def correlation_volume(left_feature, right_feature, max_disp):
     for i in range(max_disp):
         if i > 0:
             cost_volume_row = (left_feature[:, :, :, i:] * right_feature[:, :, :, :-i]).mean(dim=1, keepdim=True)
-            cost_volume_row = F.pad(cost_volume_row, (i, 0, 0, 0, 0, 0, 0, 0), mode='constant', value=0)
+            
+            # Modify for SiMa: If the left/top padding of the Pad nodes is >= 32, split the Pad node 
+            #                  into 2 or more Pad nodes such that the amount of padding is always < 32.
+            while i > 0:
+                cost_volume_row = F.pad(cost_volume_row, (min(31, i), 0, 0, 0, 0, 0, 0, 0), mode='constant', value=0)
+                i -= 31
+
             cost_volume = torch.concat([cost_volume, cost_volume_row], dim=1)
         else:
             cost_volume_row = (left_feature * right_feature).mean(dim=1, keepdim=True)
