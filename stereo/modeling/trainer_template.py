@@ -1,8 +1,11 @@
 # @Time    : 2024/1/20 03:13
 # @Author  : zhangchenming
 import os
+import pickle
 import time
 import glob
+import cv2
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.distributed as dist
@@ -16,6 +19,9 @@ from stereo.utils.warmup import LinearWarmup
 from stereo.utils.clip_grad import ClipGrad
 from stereo.utils.lamb import Lamb
 from stereo.evaluation.metric_per_image import epe_metric, d1_metric, threshold_metric
+
+
+EXPORT_INPUT, IMPORT_OUTPUT = True, True
 
 
 class TrainerTemplate:
@@ -267,9 +273,21 @@ class TrainerTemplate:
             for k, v in data.items():
                 data[k] = v.to(local_rank) if torch.is_tensor(v) else v
 
+            if EXPORT_INPUT:
+                data['left'][0].cpu().numpy().transpose(1, 2, 0).tofile(f'left_{i}.npy')  # NCHW BGR to NHWC BGR
+                data['right'][0].cpu().numpy().transpose(1, 2, 0).tofile(f'right_{i}.npy')  # NCHW BGR to NHWC BGR
+                    
+                # cv2.imwrite(f"left_{i}.png", (data['left'][0].cpu().numpy().transpose(1, 2, 0) * 255).astype(np.uint8))
+                # cv2.imwrite(f"right_{i}.png", (data['right'][0].cpu().numpy().transpose(1, 2, 0) * 255).astype(np.uint8))
+
+                continue
+
             with torch.cuda.amp.autocast(enabled=self.cfgs.OPTIMIZATION.AMP):
                 infer_start = time.time()
-                model_pred = self.model(data)
+                if IMPORT_OUTPUT:                
+                    model_pred = np.fromfile(f'/project/davinci_users/software/lihang.ying/workspace/PaddleOCR/data_lmdb_release_npy/{i}.out.npy', dtype=np.float32)
+                else:
+                    model_pred = self.model(data)
                 infer_time = time.time() - infer_start
 
             # Modify for SiMa: remove the unsupported last layers and calculate outside of the model
