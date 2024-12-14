@@ -136,7 +136,9 @@ def export_onnx(model, inputs, weights, opset, dynamic, simplify, prefix=colorst
     logger.info(f'{prefix} starting export with onnx {onnx.__version__}...')
     f = Path(weights).with_suffix('.onnx')
 
-    input_names = ['left_img', 'right_img']
+    # Modify for SiMa: concat left and right images
+    # input_names = ['left_img', 'right_img']
+    input_names = ['concat_left_right_image']
     output_names =  ['disp_pred']
 
     if dynamic:
@@ -148,7 +150,9 @@ def export_onnx(model, inputs, weights, opset, dynamic, simplify, prefix=colorst
     
     torch.onnx.export(
         model,
-        {'data': inputs},
+        # Modify for SiMa: concat left and right images
+        # {'data': inputs},
+        torch.concat([inputs['left'], inputs['right']], dim=1),
         f,
         verbose=False,
         opset_version=opset,

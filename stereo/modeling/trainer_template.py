@@ -21,9 +21,6 @@ from stereo.utils.lamb import Lamb
 from stereo.evaluation.metric_per_image import epe_metric, d1_metric, threshold_metric
 
 
-EXPORT_INPUT, IMPORT_OUTPUT = True, True
-
-
 class TrainerTemplate:
     def __init__(self, args, cfgs, local_rank, global_rank, logger, tb_writer, model):
         self.args = args
@@ -204,7 +201,9 @@ class TrainerTemplate:
             data_timer = time.time()
 
             with torch.cuda.amp.autocast(enabled=self.cfgs.OPTIMIZATION.AMP):
-                model_pred = self.model(data)
+                # Modify for SiMa: use the concated data instead of dict
+                concatted_image = torch.concat([data['left'], data['right']], dim=1)
+                model_pred = self.model(concatted_image)
                 infer_timer = time.time()
                 loss, tb_info = loss_func(model_pred, data)
 
@@ -273,9 +272,12 @@ class TrainerTemplate:
             for k, v in data.items():
                 data[k] = v.to(local_rank) if torch.is_tensor(v) else v
 
+            # Modify for SiMa: export input as ndarray
+            EXPORT_INPUT, IMPORT_OUTPUT = False, False
             if EXPORT_INPUT:
-                data['left'][0].cpu().numpy().transpose(1, 2, 0).tofile(f'left_{i}.npy')  # NCHW BGR to NHWC BGR
-                data['right'][0].cpu().numpy().transpose(1, 2, 0).tofile(f'right_{i}.npy')  # NCHW BGR to NHWC BGR
+                # concat
+                torch.concat([data['left'], data['right']], dim=1)[0].cpu().numpy().transpose(1, 2, 0) \
+                    .tofile(f'left_right_{i}.npy')  # NCHW BGR to NHWC BGR
                     
                 # cv2.imwrite(f"left_{i}.png", (data['left'][0].cpu().numpy().transpose(1, 2, 0) * 255).astype(np.uint8))
                 # cv2.imwrite(f"right_{i}.png", (data['right'][0].cpu().numpy().transpose(1, 2, 0) * 255).astype(np.uint8))
@@ -284,10 +286,21 @@ class TrainerTemplate:
 
             with torch.cuda.amp.autocast(enabled=self.cfgs.OPTIMIZATION.AMP):
                 infer_start = time.time()
-                if IMPORT_OUTPUT:                
-                    model_pred = np.fromfile(f'/project/davinci_users/software/lihang.ying/workspace/PaddleOCR/data_lmdb_release_npy/{i}.out.npy', dtype=np.float32)
+                # Modify for SiMa: import SiMa output
+                if IMPORT_OUTPUT:     
+                    output0 = np.fromfile(f'/project/davinci_users/software/lihang.ying/workspace/LightStereo/data/left_right/{i}_0.out.npy', 
+                                   dtype=np.float32)
+                    output1 = np.fromfile(f'/project/davinci_users/software/lihang.ying/workspace/LightStereo/data/left_right/{i}_1.out.npy', 
+                                   dtype=np.float32)
+
+                    b, h, w = 1, 96, 312
+                    model_pred = {}           
+                    model_pred['init_disp'] = torch.from_numpy(output0).reshape((b, 1, h, w)).to(data['disp'].device)
+                    model_pred['spx_pred'] = torch.from_numpy(output1).reshape((b, 9, 4*h, 4*w)).to(data['disp'].device)
                 else:
-                    model_pred = self.model(data)
+                    # Modify for SiMa: use the concated data instead of dict
+                    concatted_image = torch.concat([data['left'], data['right']], dim=1)                
+                    model_pred = self.model(concatted_image)
                 infer_time = time.time() - infer_start
 
             # Modify for SiMa: remove the unsupported last layers and calculate outside of the model

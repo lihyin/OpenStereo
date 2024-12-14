@@ -43,8 +43,10 @@ class LightStereo(nn.Module):
         self.refine_3 = BasicDeconv2d(16, 9, kernel_size=4, stride=2, padding=1)
 
     def forward(self, data):
-        image1 = data['left']
-        image2 = data['right']
+        # Modify for SiMa: use the concated data instead of dict
+        # image1 = data['left']
+        # image2 = data['right']
+        image1, image2 = data[:, :3, :, :], data[:, 3:, :, :]
 
         features_left = self.backbone(image1)
         features_right = self.backbone(image2)
@@ -70,7 +72,9 @@ class LightStereo(nn.Module):
         if self.training:
             disp_4 = F.interpolate(init_disp, image1.shape[2:], mode='bilinear', align_corners=False)
             disp_4 *= 4
+            # Modify for SiMa: use the concated data instead of dict
             result['disp_4'] = disp_4
+            # result.append(disp_4)
 
         return result
 
