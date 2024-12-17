@@ -273,7 +273,7 @@ class TrainerTemplate:
                 data[k] = v.to(local_rank) if torch.is_tensor(v) else v
 
             # Modify for SiMa: export input as ndarray
-            EXPORT_INPUT, IMPORT_OUTPUT = False, False
+            EXPORT_INPUT, IMPORT_OUTPUT, INFER_ON_SIMA = False, False, True
             if EXPORT_INPUT:
                 # concat
                 torch.concat([data['left'], data['right']], dim=1)[0].cpu().numpy().transpose(1, 2, 0) \
@@ -297,6 +297,9 @@ class TrainerTemplate:
                     model_pred = {}           
                     model_pred['init_disp'] = torch.from_numpy(output0).reshape((b, 1, h, w)).to(data['disp'].device)
                     model_pred['spx_pred'] = torch.from_numpy(output1).reshape((b, 9, 4*h, 4*w)).to(data['disp'].device)
+                elif INFER_ON_SIMA:
+                    concatted_image = torch.concat([data['left'], data['right']], dim=1)                
+                    # TODO: use SiMa MLA python engine to infer
                 else:
                     # Modify for SiMa: use the concated data instead of dict
                     concatted_image = torch.concat([data['left'], data['right']], dim=1)                
