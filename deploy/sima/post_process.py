@@ -115,5 +115,5 @@ def context_upsample(disp_low, up_weights, scale_factor=4):
     return disp
 
 
-def postpro(model_pred):
+def post_process(model_pred):
     return context_upsample(model_pred['init_disp'] * 4., model_pred['spx_pred'].float())  # # [bz, 1, H, W]
