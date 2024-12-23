@@ -41,7 +41,7 @@ MODEL:
     AGGREGATION_BLOCKS: [ 8, 16, 32 ]
     LEFT_ATT: true
     FIND_UNUSED_PARAMETERS: false
-    CKPT: -1
+    CKPT: -1  # 499
     PRETRAINED_MODEL: '' # The path of checkpoint trained with the Sceneflow dataset.
 
 OPTIMIZATION:
@@ -49,7 +49,7 @@ OPTIMIZATION:
     SYNC_BN: true
     AMP: false
     BATCH_SIZE_PER_GPU: 2
-    NUM_EPOCHS: 500
+    NUM_EPOCHS: 2000
 
     OPTIMIZER:
         NAME: AdamW
@@ -80,7 +80,7 @@ EVALUATOR:
 TRAINER:
     EVAL_INTERVAL: 10
     CKPT_SAVE_INTERVAL: 10
-    MAX_CKPT_SAVE_NUM: 100
+    MAX_CKPT_SAVE_NUM: 100000
     LOGGER_ITER_INTERVAL: 10
     TRAIN_VISUALIZATION: True
     EVAL_VISUALIZATION: True
