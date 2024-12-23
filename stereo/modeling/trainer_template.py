@@ -269,16 +269,23 @@ class TrainerTemplate:
             epoch_metrics[k] = {'indexes': [], 'values': []}
 
         for i, data in enumerate(self.eval_loader):
+            # if i >= 100:
+            #     break
+            
             for k, v in data.items():
                 data[k] = v.to(local_rank) if torch.is_tensor(v) else v
 
             # Modify for SiMa: export input as ndarray
-            EXPORT_INPUT, IMPORT_OUTPUT, INFER_ON_SIMA = False, False, True
+            EXPORT_INPUT, IMPORT_OUTPUT, INFER_ON_SIMA = True, False, False
             if EXPORT_INPUT:
-                # concat
-                torch.concat([data['left'], data['right']], dim=1)[0].cpu().numpy().transpose(1, 2, 0) \
-                    .tofile(f'left_right_{i}.npy')  # NCHW BGR to NHWC BGR
-                    
+                # concat, NCHW BGR to NHWC BGR
+                concat_image = torch.concat([data['left'], data['right']], dim=1)[0] \
+                    .cpu().numpy().transpose(1, 2, 0) 
+                np.save(f'left_right_debug_{i}.npy', concat_image) 
+
+                with open(f'left_right_{i}.pkl', 'wb') as f:
+                    pickle.dump(concat_image, f)
+                   
                 # cv2.imwrite(f"left_{i}.png", (data['left'][0].cpu().numpy().transpose(1, 2, 0) * 255).astype(np.uint8))
                 # cv2.imwrite(f"right_{i}.png", (data['right'][0].cpu().numpy().transpose(1, 2, 0) * 255).astype(np.uint8))
 
@@ -288,15 +295,18 @@ class TrainerTemplate:
                 infer_start = time.time()
                 # Modify for SiMa: import SiMa output
                 if IMPORT_OUTPUT:     
-                    output0 = np.fromfile(f'/project/davinci_users/software/lihang.ying/workspace/LightStereo/data/left_right/{i}_0.out.npy', 
-                                   dtype=np.float32)
-                    output1 = np.fromfile(f'/project/davinci_users/software/lihang.ying/workspace/LightStereo/data/left_right/{i}_1.out.npy', 
-                                   dtype=np.float32)
+                    # output0 = np.load(f'/project/davinci_users/software/lihang.ying/workspace/LightStereo/data/left_right/{i}_0.out.debug.npy')
+                    # output1 = np.load(f'/project/davinci_users/software/lihang.ying/workspace/LightStereo/data/left_right/{i}_1.out.debug.npy')
+                    with open(f'/project/davinci_users/software/lihang.ying/workspace/LightStereo/data/left_right/{i}.out.pkl', 'rb') as f:
+                    # with open(f'/project/davinci_users/software/lihang.ying/workspace/LightStereo/data/left_right/{i}.epoch_499.out.pkl', 'rb') as f:
+                    # with open(f'/project/davinci_users/software/lihang.ying/workspace/LightStereo/data/left_right/{i}.BGR_2.3602.out.pkl', 'rb') as f:
+                        output_pkl = pickle.load(f)
 
-                    b, h, w = 1, 96, 312
                     model_pred = {}           
-                    model_pred['init_disp'] = torch.from_numpy(output0).reshape((b, 1, h, w)).to(data['disp'].device)
-                    model_pred['spx_pred'] = torch.from_numpy(output1).reshape((b, 9, 4*h, 4*w)).to(data['disp'].device)
+                    # model_pred['init_disp'] = torch.from_numpy(output0).permute(0, 3, 1, 2).to(data['disp'].device)
+                    # model_pred['spx_pred'] = torch.from_numpy(output1).permute(0, 3, 1, 2).to(data['disp'].device)
+                    model_pred['init_disp'] = torch.from_numpy(output_pkl[0]).permute(0, 3, 1, 2).to(data['disp'].device)
+                    model_pred['spx_pred'] = torch.from_numpy(output_pkl[1]).permute(0, 3, 1, 2).to(data['disp'].device)
                 elif INFER_ON_SIMA:
                     concatted_image = torch.concat([data['left'], data['right']], dim=1)                
                     # TODO: use SiMa MLA python engine to infer
