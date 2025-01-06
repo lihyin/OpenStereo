@@ -363,10 +363,11 @@ def run(
     right_img = torch.zeros(batch_size, 3, *imgsz, dtype=torch.float).to(device)
     inputs = {'left' : left_img, 'right' : right_img}
 
-    REVISE_MODEL = True
+    REVISE_MODEL = False
     if REVISE_MODEL:
         output_model = RevisedModel(output_model)
-        inputs = torch.concat([inputs['left'], inputs['right']], dim=2)
+
+    inputs = torch.concat([inputs['left'], inputs['right']], dim=2)
     
     # Prepare Model
     output_model.eval().to(device)

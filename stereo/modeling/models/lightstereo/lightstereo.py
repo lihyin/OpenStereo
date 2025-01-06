@@ -46,7 +46,9 @@ class LightStereo(nn.Module):
         # Modify for SiMa: use the concated data instead of dict
         # image1 = data['left']
         # image2 = data['right']
-        image1, image2 = data[:, :3, :, :], data[:, 3:, :, :]
+        # image1, image2 = data[:, :3, :, :], data[:, 3:, :, :]  # [N, C*2, H, W]
+        h = int(data.shape[2] / 2)
+        image1, image2 = data[:, :, :h, :], data[:, :, h:, :]  # [N, C, H*2, W]
 
         features_left = self.backbone(image1)
         features_right = self.backbone(image2)
