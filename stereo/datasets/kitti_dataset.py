@@ -19,7 +19,9 @@ class KittiDataset(DatasetTemplate):
     def __getitem__(self, idx):
         item = self.data_list[idx]
         full_paths = [os.path.join(self.root, x) for x in item]
-        left_img_path, right_img_path, disp_img_path = full_paths
+        # left_img_path, right_img_path, disp_img_path = full_paths
+        left_img_path, right_img_path = full_paths
+        disp_img_path = left_img_path
         if self.use_noc:
             disp_img_path = disp_img_path.replace('disp_occ', 'disp_noc')
         # image

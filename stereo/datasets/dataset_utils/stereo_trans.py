@@ -247,7 +247,7 @@ class RightTopPad(object):
                 pad_width = np.array([[pad_top, pad_bottom], [pad_left, pad_right], [0, 0]])
                 sample[k] = np.pad(sample[k], pad_width, 'edge')
 
-            elif k in ['disp', 'disp_right', 'occ_mask', 'occ_mask_right']:
+            elif k in ['disp_right', 'occ_mask', 'occ_mask_right']:
                 pad_width = np.array([[pad_top, pad_bottom], [pad_left, pad_right]])
                 sample[k] = np.pad(sample[k], pad_width, 'constant', constant_values=0)
 

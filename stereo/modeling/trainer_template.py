@@ -331,7 +331,7 @@ class TrainerTemplate:
                 img_color = disp_to_color(disp_pred, max_disp=192)
                 img_color = img_color.astype('uint8')
                 img_color = Image.fromarray(img_color)
-                img_color.save(f'/project/davinci_users/software/lihang.ying/workspace/LightStereo/data/left_right/{i}.pretrained-LightStereo-LX-KITTI.ckpt.fp32.test.out.png')
+                img_color.save(f'/project/davinci_users/software/lihang.ying/workspace/LightStereo/data/left_right/{i}.pretrained-LightStereo-L-KITTI.ckpt.fp32.test.out.png')
 
             IGNORE_METRIC_CALCULATION = True
             if IGNORE_METRIC_CALCULATION:  
