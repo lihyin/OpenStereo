@@ -16,6 +16,8 @@ from stereo.utils.clip_grad import ClipGrad
 from stereo.utils.lamb import Lamb
 from stereo.evaluation.metric_per_image import epe_metric, d1_metric, threshold_metric
 
+from PIL import Image
+from stereo.utils.disp_color import disp_to_color
 
 class TrainerTemplate:
     def __init__(self, args, cfgs, local_rank, global_rank, logger, tb_writer, model):
@@ -270,7 +272,19 @@ class TrainerTemplate:
                 infer_start = time.time()
                 model_pred = self.model(data)
                 infer_time = time.time() - infer_start
+            
+            OUTPUT_VISUALIZED_IMAGE = True
+            if OUTPUT_VISUALIZED_IMAGE:     
+                disp_pred = model_pred['disp_pred'].squeeze().cpu().numpy()
+                img_color = disp_to_color(disp_pred, max_disp=192)
+                img_color = img_color.astype('uint8')
+                img_color = Image.fromarray(img_color)
+                img_color.save(f'/project/davinci_users/software/lihang.ying/workspace/LightStereo/data/left_right/{i}.pretrained-LightStereo-M-KITTI.ckpt.orig.fp32.out.png')
 
+            IGNORE_METRIC_CALCULATION = False
+            if IGNORE_METRIC_CALCULATION:  
+                continue 
+            
             disp_pred = model_pred['disp_pred']
             disp_gt = data["disp"]
             mask = (disp_gt < evaluator_cfgs.MAX_DISP) & (disp_gt > 0)

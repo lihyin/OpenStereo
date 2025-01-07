@@ -1,5 +1,5 @@
 import torch
-import MultiScaleDeformableAttention as MSDA
+# import MultiScaleDeformableAttention as MSDA
 
 
 class _DownSample(torch.autograd.Function):
