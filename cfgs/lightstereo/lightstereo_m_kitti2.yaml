@@ -35,13 +35,12 @@ DATA_CONFIG:
 
 MODEL:
     NAME: LightStereo
-    BACKCONE: EfficientNetv2
     MAX_DISP: 192
-    EXPANSE_RATIO: 8
-    AGGREGATION_BLOCKS: [ 8, 16, 32 ]
+    EXPANSE_RATIO: 4
+    AGGREGATION_BLOCKS: [ 4, 8, 16 ]
     LEFT_ATT: true
     FIND_UNUSED_PARAMETERS: false
-    CKPT: -1  # 499
+    CKPT: -1
     PRETRAINED_MODEL: '' # The path of checkpoint trained with the Sceneflow dataset.
 
 OPTIMIZATION:
