@@ -1,16 +1,22 @@
 # @Time    : 2024/1/20 03:13
 # @Author  : zhangchenming
 import os
+import pickle
 import time
 import glob
+import cv2
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.distributed as dist
+from PIL import Image
 
 from functools import partial
 from stereo.datasets import build_dataloader
+from stereo.modeling.disp_refinement.disp_refinement import context_upsample
 from stereo.utils import common_utils
 from stereo.utils.common_utils import color_map_tensorboard, write_tensorboard
+from stereo.utils.disp_color import disp_to_color
 from stereo.utils.warmup import LinearWarmup
 from stereo.utils.clip_grad import ClipGrad
 from stereo.utils.lamb import Lamb
@@ -197,7 +203,10 @@ class TrainerTemplate:
             data_timer = time.time()
 
             with torch.cuda.amp.autocast(enabled=self.cfgs.OPTIMIZATION.AMP):
-                model_pred = self.model(data)
+                # Modify for SiMa: use the concated data instead of dict
+                # concatted_image = torch.concat([data['left'], data['right']], dim=1)  # [N, C*2, H, W]
+                concatted_image = torch.concat([data['left'], data['right']], dim=2)  # [N, C, H*2, W]
+                model_pred = self.model(concatted_image)
                 infer_timer = time.time()
                 loss, tb_info = loss_func(model_pred, data)
 
@@ -263,14 +272,71 @@ class TrainerTemplate:
             epoch_metrics[k] = {'indexes': [], 'values': []}
 
         for i, data in enumerate(self.eval_loader):
+            # if i >= 134:
+            #     break
+            
             for k, v in data.items():
                 data[k] = v.to(local_rank) if torch.is_tensor(v) else v
 
+            # Modify for SiMa: export input as ndarray
+            EXPORT_INPUT, IMPORT_OUTPUT, INFER_ON_SIMA = False, False, False
+            if EXPORT_INPUT:
+                # concat, NCHW BGR to NHWC BGR
+                concat_image = torch.concat([data['left'], data['right']], dim=1)[0] \
+                    .cpu().numpy().transpose(1, 2, 0) 
+                np.save(f'left_right_debug_{i}.npy', concat_image) 
+
+                with open(f'left_right_{i}.pkl', 'wb') as f:
+                    pickle.dump(concat_image, f)
+                   
+                # cv2.imwrite(f"left_{i}.png", (data['left'][0].cpu().numpy().transpose(1, 2, 0) * 255).astype(np.uint8))
+                # cv2.imwrite(f"right_{i}.png", (data['right'][0].cpu().numpy().transpose(1, 2, 0) * 255).astype(np.uint8))
+
+                continue
+
             with torch.cuda.amp.autocast(enabled=self.cfgs.OPTIMIZATION.AMP):
                 infer_start = time.time()
-                model_pred = self.model(data)
+                # Modify for SiMa: import SiMa output
+                if IMPORT_OUTPUT:     
+                    # output0 = np.load(f'/project/davinci_users/software/lihang.ying/workspace/LightStereo/data/left_right/{i}_0.out.debug.npy')
+                    # output1 = np.load(f'/project/davinci_users/software/lihang.ying/workspace/LightStereo/data/left_right/{i}_1.out.debug.npy')
+                    # with open(f'/project/davinci_users/software/lihang.ying/workspace/LightStereo/data/left_right/{i}.3x768x1248_RGB_2.3602.out.pkl', 'rb') as f:
+                    # with open(f'/project/davinci_users/software/lihang.ying/workspace/LightStereo/data/left_right/{i}.epoch_499.out.pkl', 'rb') as f:
+                    # with open(f'/project/davinci_users/software/lihang.ying/workspace/LightStereo/data/left_right/{i}.BGR_2.3602.out.pkl', 'rb') as f:
+                    with open(f'/project/davinci_users/software/lihang.ying/workspace/LightStereo/data/left_right/{i}.m_3x768x1284_epoch_680_2.5282.out.pkl', 'rb') as f:
+                        output_pkl = pickle.load(f)
+
+                    model_pred = {}           
+                    # model_pred['init_disp'] = torch.from_numpy(output0).permute(0, 3, 1, 2).to(data['disp'].device)
+                    # model_pred['spx_pred'] = torch.from_numpy(output1).permute(0, 3, 1, 2).to(data['disp'].device)
+                    model_pred['init_disp'] = torch.from_numpy(output_pkl[0]).permute(0, 3, 1, 2).to(data['disp'].device)
+                    model_pred['spx_pred'] = torch.from_numpy(output_pkl[1]).permute(0, 3, 1, 2).to(data['disp'].device)
+                elif INFER_ON_SIMA:
+                    concatted_image = torch.concat([data['left'], data['right']], dim=1)                
+                    # TODO: use SiMa MLA python engine to infer
+                else:
+                    # Modify for SiMa: use the concated data instead of dict
+                    # concatted_image = torch.concat([data['left'], data['right']], dim=1)  # [H, C*2, H, W]
+                    concatted_image = torch.concat([data['left'], data['right']], dim=2)  # [H, C, H*2, W]
+                    model_pred = self.model(concatted_image)
                 infer_time = time.time() - infer_start
 
+            # Modify for SiMa: remove the unsupported last layers and calculate outside of the model
+            if 'disp_pred' not in model_pred:
+                model_pred['disp_pred'] = context_upsample(model_pred['init_disp'] * 4., model_pred['spx_pred'].float())  # # [bz, 1, H, W]
+
+            OUTPUT_VISUALIZED_IMAGE = True
+            if OUTPUT_VISUALIZED_IMAGE:     
+                disp_pred = model_pred['disp_pred'].squeeze().cpu().numpy()
+                img_color = disp_to_color(disp_pred, max_disp=192)
+                img_color = img_color.astype('uint8')
+                img_color = Image.fromarray(img_color)
+                img_color.save(f'/project/davinci_users/software/lihang.ying/workspace/LightStereo/data/left_right/{i}.pretrained-LightStereo-LX-KITTI.ckpt.fp32.test.out.png')
+
+            IGNORE_METRIC_CALCULATION = True
+            if IGNORE_METRIC_CALCULATION:  
+                continue 
+            
             disp_pred = model_pred['disp_pred']
             disp_gt = data["disp"]
             mask = (disp_gt < evaluator_cfgs.MAX_DISP) & (disp_gt > 0)

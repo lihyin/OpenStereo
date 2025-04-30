@@ -13,8 +13,8 @@ from .models.psmnet.trainer import Trainer as PSMNetTrainer
 from .models.sttr.trainer import Trainer as STTRTrainer
 from .models.lightstereo.trainer import Trainer as LightStereoTrainer
 from .models.stereobase.trainer import Trainer as StereoBaseGRUTrainer
-# from .models.iinet.trainer import Trainer as IINetTrainer
-from .models.nmrf.trainer import Trainer as NMRFTrainer
+from .models.iinet.trainer import Trainer as IINetTrainer
+# from .models.nmrf.trainer import Trainer as NMRFTrainer
 
 
 __all__ = {
@@ -33,7 +33,7 @@ __all__ = {
     'LightStereo': LightStereoTrainer,
     'StereoBaseGRU': StereoBaseGRUTrainer,
     'IInet': IINetTrainer,
-    'NMRF': NMRFTrainer,
+    # 'NMRF': NMRFTrainer,
 }
 
 

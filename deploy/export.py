@@ -15,6 +15,7 @@ from pathlib import Path
 
 import pandas as pd
 import torch
+import torch.nn as nn
 
 from easydict import EasyDict
 from torch.utils.mobile_optimizer import optimize_for_mobile
@@ -55,7 +56,7 @@ from stereo.modeling.models.casnet.cas_gwc import GwcNet as CasGwcNet
 from stereo.modeling.models.casnet.cas_psm import PSMNet as CasPSMNet
 from stereo.modeling.models.lightstereo.lightstereo import LightStereo as LightStereo
 from stereo.modeling.models.stereobase.stereobase_gru import StereoBase as StereoBaseGRU
-
+from stereo.modeling.disp_refinement.disp_refinement import context_upsample
 
 __net__ = {
     'STTR': STTR,
@@ -127,17 +128,33 @@ def export_torchscript(model, inputs, file, optimize, prefix=colorstr('TorchScri
         ts.save(str(f))
     return f, None
 
+class RevisedModel(nn.Module):
+    def __init__(self, model):
+        super(RevisedModel, self).__init__()
+        self.model = model
+
+    def forward(self, x):
+        x = torch.concat(x.split(int(x.shape[2] / 2), dim=2), dim=1)  # convert [N, C, H*2, W] to [N, C*2, H, W]
+        result = self.model(x)
+        return result
+        # init_disp, spx_pred = result['init_disp'], result['spx_pred']
+        # disp_pred = context_upsample(init_disp * 4., spx_pred.float()) # # [bz, 1, H, W]
+        # return disp_pred
+    
 @try_export
 def export_onnx(model, inputs, weights, opset, dynamic, simplify, prefix=colorstr('ONNX:')):
     # ONNX export
     check_requirements('onnx', logger)
     import onnx
-
+    
     logger.info(f'{prefix} starting export with onnx {onnx.__version__}...')
     f = Path(weights).with_suffix('.onnx')
 
-    input_names = ['left_img', 'right_img']
-    output_names =  ['disp_pred']
+    # Modify for SiMa: concat left and right images
+    # input_names = ['left_img', 'right_img']
+    # output_names =  ['disp_pred']
+    input_names = ['concat_left_right_image']
+    output_names =  ['init_disp', 'spx_pred']
 
     if dynamic:
         dynamic = {'left_img': {0: 'batch', 2: 'height', 3: 'width'},
@@ -148,7 +165,9 @@ def export_onnx(model, inputs, weights, opset, dynamic, simplify, prefix=colorst
     
     torch.onnx.export(
         model,
-        {'data': inputs},
+        # Modify for SiMa: concat left and right images
+        # {'data': inputs},
+        inputs,
         f,
         verbose=False,
         opset_version=opset,
@@ -343,6 +362,12 @@ def run(
     left_img = torch.zeros(batch_size, 3, *imgsz, dtype=torch.float).to(device)
     right_img = torch.zeros(batch_size, 3, *imgsz, dtype=torch.float).to(device)
     inputs = {'left' : left_img, 'right' : right_img}
+
+    REVISE_MODEL = False
+    if REVISE_MODEL:
+        output_model = RevisedModel(output_model)
+
+    inputs = torch.concat([inputs['left'], inputs['right']], dim=2)
     
     # Prepare Model
     output_model.eval().to(device)

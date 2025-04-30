@@ -12,3 +12,4 @@ h5py
 antialiased_cnns
 kornia
 onnx
+einops

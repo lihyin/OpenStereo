@@ -9,4 +9,7 @@ def disparity_regression(x, maxdisp):
     assert len(x.shape) == 4
     disp_values = torch.arange(0, maxdisp, dtype=x.dtype, device=x.device)
     disp_values = disp_values.view(1, maxdisp, 1, 1)
-    return torch.sum(x * disp_values, 1, keepdim=True)
+    
+    # Modify for SiMa: replace sum by mean() * size()
+    return torch.mean(x * disp_values, 1, keepdim=True) * x.size(1)
+    # return torch.sum(x * disp_values, 1, keepdim=True)

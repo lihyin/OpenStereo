@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 from stereo.modeling.common.basic_block_3d import BasicConv3d
 from stereo.modeling.common.basic_block_2d import BasicConv2d
-
+import torch.nn.functional as F
 
 class CoExCostVolume(nn.Module):
     def __init__(self, maxdisp, group=1):
@@ -31,12 +31,32 @@ class CoExCostVolume(nn.Module):
 
 def correlation_volume(left_feature, right_feature, max_disp):
     b, c, h, w = left_feature.size()
+    # Modify for SiMa: use pad & concat to replace scatter_nd, add keepdim for mean()
+    cost_volume = []
+    for i in range(max_disp):
+        if i > 0:
+            cost_volume_row = (left_feature[:, :, :, i:] * right_feature[:, :, :, :-i]).mean(dim=1, keepdim=True)
+            
+            # Modify for SiMa: If the left/top padding of the Pad nodes is >= 32, split the Pad node 
+            #                  into 2 or more Pad nodes such that the amount of padding is always < 32.
+            while i > 0:
+                cost_volume_row = F.pad(cost_volume_row, (min(31, i), 0, 0, 0, 0, 0, 0, 0), mode='constant', value=0)
+                i -= 31
+
+            cost_volume = torch.concat([cost_volume, cost_volume_row], dim=1)
+        else:
+            cost_volume_row = (left_feature * right_feature).mean(dim=1, keepdim=True)
+            cost_volume = cost_volume_row
+    
+    '''
     cost_volume = left_feature.new_zeros(b, max_disp, h, w)
     for i in range(max_disp):
         if i > 0:
             cost_volume[:, i, :, i:] = (left_feature[:, :, :, i:] * right_feature[:, :, :, :-i]).mean(dim=1)
         else:
             cost_volume[:, i, :, :] = (left_feature * right_feature).mean(dim=1)
+    '''
+            
     cost_volume = cost_volume.contiguous()
     return cost_volume
 

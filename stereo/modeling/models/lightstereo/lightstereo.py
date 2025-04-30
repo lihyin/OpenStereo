@@ -26,11 +26,12 @@ class LightStereo(nn.Module):
                                     backbone_channels=self.backbone.output_channels)
 
         # disp refine
+        # Modify for SiMa2: replace InstanceNorm2d with BatchNorm2d
         self.refine_1 = nn.Sequential(
             BasicConv2d(self.backbone.output_channels[0], 24, kernel_size=3, stride=1, padding=1,
-                        norm_layer=nn.InstanceNorm2d, act_layer=nn.LeakyReLU),
+                        norm_layer=nn.BatchNorm2d, act_layer=nn.LeakyReLU),
             BasicConv2d(24, 24, kernel_size=3, stride=1, padding=1,
-                        norm_layer=nn.InstanceNorm2d, act_layer=nn.ReLU))
+                        norm_layer=nn.BatchNorm2d, act_layer=nn.ReLU))
 
         self.stem_2 = nn.Sequential(
             BasicConv2d(3, 16, kernel_size=3, stride=2, padding=1,
@@ -42,8 +43,12 @@ class LightStereo(nn.Module):
         self.refine_3 = BasicDeconv2d(16, 9, kernel_size=4, stride=2, padding=1)
 
     def forward(self, data):
-        image1 = data['left']
-        image2 = data['right']
+        # Modify for SiMa: use the concated data instead of dict
+        # image1 = data['left']
+        # image2 = data['right']
+        # image1, image2 = data[:, :3, :, :], data[:, 3:, :, :]  # [N, C*2, H, W]
+        h = int(data.shape[2] / 2)
+        image1, image2 = data[:, :, :h, :], data[:, :, h:, :]  # [N, C, H*2, W]
 
         features_left = self.backbone(image1)
         features_right = self.backbone(image2)
@@ -59,14 +64,19 @@ class LightStereo(nn.Module):
         xspx = self.refine_2(xspx, self.stem_2(image1))
         xspx = self.refine_3(xspx)
         spx_pred = F.softmax(xspx, 1)  # [bz, 9, H, W]
-        disp_pred = context_upsample(init_disp * 4., spx_pred.float()).unsqueeze(1)  # # [bz, 1, H, W]
-
-        result = {'disp_pred': disp_pred}
-
+        
+        # Modify for SiMa: remove context_upsample() layers and move outside of the model
+        # disp_pred = context_upsample(init_disp * 4., spx_pred.float()) # # [bz, 1, H, W]
+        # result = {'disp_pred': disp_pred}
+        result = {'init_disp': init_disp, 
+                  'spx_pred': spx_pred}
+        
         if self.training:
             disp_4 = F.interpolate(init_disp, image1.shape[2:], mode='bilinear', align_corners=False)
             disp_4 *= 4
+            # Modify for SiMa: use the concated data instead of dict
             result['disp_4'] = disp_4
+            # result.append(disp_4)
 
         return result
 
@@ -74,6 +84,10 @@ class LightStereo(nn.Module):
         disp_gt = input_data["disp"]  # [bz, h, w]
         disp_gt = disp_gt.unsqueeze(1)  # [bz, 1, h, w]
         mask = (disp_gt < self.max_disp) & (disp_gt > 0)  # [bz, 1, h, w]
+
+        # Modify for SiMa: remove the unsupported last layers and calculate outside of the model
+        if 'disp_pred' not in model_pred:
+            model_pred['disp_pred'] = context_upsample(model_pred['init_disp'] * 4., model_pred['spx_pred'].float())  # # [bz, 1, H, W]
 
         disp_pred = model_pred['disp_pred']
         loss = 1.0 * F.smooth_l1_loss(disp_pred[mask], disp_gt[mask], reduction='mean')
